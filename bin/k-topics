@@ -1,0 +1,8 @@
+#!/bin/bash
+source ${BASH_SOURCE%/*}/__k-functions
+if $(__kcheckargs ${1}); then
+    ${CONFLUENT_HOME}/bin/kafka-topics \
+        --bootstrap-server $(__kbootstrap ${1}) \
+        $(__kconfig_path ${1} --command-config) \
+        "${@:2}"
+fi

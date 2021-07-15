@@ -1,0 +1,49 @@
+#!/bin/bash
+while [[ "${#}" -gt 0 ]]; do
+  case $1 in
+    -h | --help) echo -e "Copies schemas from Schema Registry source to destination. Prints the destination schema id. Requires jq.\nUsage: ${0}"
+                 echo -e "\t--topic [REQUIRED (or use --all)]"
+                 echo -e "\t--all"
+                 echo -e "\t--source schema-registry.my-company.com"
+                 echo -e "\t--destination localhost"
+                 echo -e "\t--type value | key"
+                 exit 0;;
+    --topic) TOPIC="${2}"; shift;;
+    --all) TOPIC='*all*';;
+    --source) SOURCE_REGISTRY="${2}"; shift;;
+    --destination | --host) DESTINATION="${2}"; shift;;
+    --type) TYPE=${2,,}; shift;;
+    *) echo "Unknown parameter: ${1}. Try --help"; exit 1;;
+  esac
+  shift
+done
+
+if [[ -z "${TOPIC}" ]]; then
+    echo "--topic [REQUIRED (or use --all)]. Try --help"
+    exit 2
+else
+    SOURCE_URL="http://${SOURCE_REGISTRY:-schema-registry.my-company.com}/subjects"
+    if [ "${TOPIC}" == '*all*' ]; then
+        mapfile -t SUBJECTS < <(curl -s "${SOURCE_URL}" | jq -r .[] | sort)
+    else
+        SUBJECTS=("${TOPIC}-${TYPE:-value}")
+    fi
+
+    for SUBJECT in "${SUBJECTS[@]}"; do
+        SOURCE_PATH="${SOURCE_URL}/${SUBJECT}/versions/latest"
+        SCHEMA=$(curl -s "${SOURCE_PATH}" | jq .schema)
+        if [[ "${SCHEMA}" == null || "${SCHEMA}" == '' ]]; then
+            echo "Schema not found at: ${SOURCE_PATH}"
+            exit 3
+        else
+            DESTINATION_URL="http://${DESTINATION:-localhost}:8081/subjects"
+            ID=$(curl -s -X POST -H 'Content-Type: application/vnd.schemaregistry+json' "${DESTINATION_URL}/${SUBJECT}/versions" -d "{\"schema\":${SCHEMA}}" | jq .id)
+            if [[ "${ID}" != null && "${ID}" != '' ]]; then
+                echo "${SUBJECT}=${ID}"
+            else
+                echo "Error Uploading. Verify the schema-registry is running at ${DESTINATION_URL}"
+                exit 4
+            fi
+        fi
+    done
+fi

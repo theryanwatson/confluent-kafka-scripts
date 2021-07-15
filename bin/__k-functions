@@ -1,0 +1,57 @@
+function __klower() {
+    echo "${*}" | tr '[:upper:]' '[:lower:]'
+}
+
+function __kcheckargs() {
+    local __env=$(__klower "${*}")
+    if [[ "${__env}" =~ ^local(host)?$ ]] || [[ ${__env} =~ [a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.com ]]; then
+        exit 0
+    elif [[ "${__env}" =~ ^[a-z0-9-]+$ ]] && [ -f "${HOME}/.ccloud/${__env}.config" ]; then
+        exit 0
+    else
+        echo >&2 "ERROR: First arg was '${__env}', must be one of: local, [hostname].company.com, or ~/.ccloud/[?].config prefix like qa or prod"
+        exit 2
+    fi
+}
+
+function __kbootstrap() {
+    local __env=$(__klower ${1})
+    if [[ "${__env}" =~ ^local(host)?$ ]]; then
+        echo "localhost:9092"
+    elif [[ ${__env} =~ [a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.com ]]; then
+        echo "${__env}:9092"
+    else
+        echo $(grep bootstrap.servers= ${HOME}/.ccloud/${__env}.config | sed -E 's/.*=([^\:]+)\\?(:[0-9]+)?$/\1\2/')
+    fi
+}
+
+function __kschemareg() {
+    local __env=$(__klower ${1})
+    if [[ "${__env}" =~ ^local(host)?$ ]]; then
+        echo "http://localhost:8081"
+    elif [[ ${__env} =~ [a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.com ]]; then
+        echo "http://${__env}:8081"
+    else
+        echo $(grep schema.registry= ${HOME}/.ccloud/${__env}.config | sed -E 's/.*=([^\:]+)\\?(:[0-9]+)?/\1\2/')
+    fi
+}
+
+function __kconfig_path() {
+    local __env=$(__klower ${1})
+    if [[ "${__env}" =~ ^local(host)?$ ]] || [[ ${__env} =~ [a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.com ]]; then
+        echo ""
+    else
+        echo "${2} ${HOME}/.ccloud/${__env}.config"
+    fi
+}
+
+function __latest_value_schema_id() {
+    if [[ "${*:2}" != *"value.schema"* ]] && [[ "${*:2}" == *"--topic "* ]]; then
+        __topic=$(echo "${*}" | sed -E 's/.*--topic (\S+).*/\1/')
+        __version=$(curl -s "$(__kschemareg ${1})/subjects/${__topic}-value/versions/latest" | sed -E 's/.*"id":([0-9]+).*/\1/')
+        if [[ "${__version}" =~ ^[0-9]+$ ]]; then
+            echo "--property value.schema.id=${__version}"
+        fi
+    fi
+}
+

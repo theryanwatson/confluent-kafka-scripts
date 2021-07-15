@@ -1,0 +1,13 @@
+#!/bin/bash
+source ${BASH_SOURCE%/*}/__k-functions
+if $(__kcheckargs ${1}); then
+    ${CONFLUENT_HOME}/bin/kafka-avro-console-producer \
+        --broker-list $(__kbootstrap ${1}) \
+        $(__kconfig_path ${1} --producer.config) \
+        --property schema.registry.url=$(__kschemareg ${1}) \
+        $(__latest_value_schema_id ${*}) \
+        --property key.serializer=org.apache.kafka.common.serialization.StringSerializer \
+        --property key.schema='' \
+        --property parse.key=true \
+        "${@:2}"
+fi

@@ -1,0 +1,9 @@
+#!/bin/bash
+source ${BASH_SOURCE%/*}/__k-functions
+if $(__kcheckargs ${1}); then
+    ${CONFLUENT_HOME}/bin/kafka-console-producer \
+        --broker-list $(__kbootstrap ${1}) \
+        $(__kconfig_path ${1} --producer.config) \
+        --property parse.key=true \
+        "${@:2}"
+fi
