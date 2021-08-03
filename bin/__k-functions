@@ -21,7 +21,7 @@ function __kbootstrap() {
     elif [[ ${__env} =~ [a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.com ]]; then
         echo "${__env}:9092"
     else
-        echo $(grep bootstrap.servers= ${HOME}/.ccloud/${__env}.config | sed -E 's/.*=([^\:]+)\\?(:[0-9]+)?$/\1\2/')
+        echo $(grep bootstrap.servers= ${HOME}/.ccloud/${__env}.config | sed -E 's/.*=([^\:]+)\\?(:[0-9]+)?\s*/\1\2/')
     fi
 }
 
@@ -32,7 +32,7 @@ function __kschemareg() {
     elif [[ ${__env} =~ [a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.com ]]; then
         echo "http://${__env}:8081"
     else
-        echo $(grep schema.registry= ${HOME}/.ccloud/${__env}.config | sed -E 's/.*=([^\:]+)\\?(:[0-9]+)?/\1\2/')
+        echo $(grep schema.registry= ${HOME}/.ccloud/${__env}.config | sed -E 's/.*=([^\:]+)\\?(:[0-9]+)?\s*/\1\2/')
     fi
 }
 
