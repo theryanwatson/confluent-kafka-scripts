@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source ${BASH_SOURCE%/*}/__k-functions
 if $(__kcheckargs ${1}); then
     ${CONFLUENT_HOME}/bin/kafka-console-consumer \

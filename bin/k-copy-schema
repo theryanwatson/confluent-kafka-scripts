@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 while [[ "${#}" -gt 0 ]]; do
   case $1 in
     -h | --help) echo -e "Copies schemas from Schema Registry source to destination. Prints the destination schema id. Requires jq.\nUsage: ${0}"
